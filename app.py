@@ -1,16 +1,29 @@
-# This is a sample Python script.
+# app.py (обновленная версия)
+from flask import Flask, render_template, session, redirect, url_for
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
 
-# Press the green button in the gutter to run the script.
+@app.route('/')
+def home():
+    return render_template('main.html')
+
+
+@app.route('/login')
+def login():
+    return render_template('auth.html')
+
+
+@app.route('/register')
+def register():
+    return render_template('registration.html')
+
+
+@app.route('/profile')
+def profile():
+    return render_template('lk.html')
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    app.run(debug=True)
