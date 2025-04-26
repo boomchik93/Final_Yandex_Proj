@@ -1,72 +1,35 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: #f5f5f5;
-            font-family: Arial, sans-serif;
-        }
+{% extends "base.html" %}
 
-        .profile-container {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+{% block title %}Личный кабинет{% endblock %}
 
-        .avatar {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 25px;
-            border: 3px solid #e0e0e0;
-        }
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='img/avatar.png') }}"
+                         class="rounded-circle mb-3"
+                         width="120"
+                         height="120"
+                         alt="Аватар">
+                    <h2 class="card-title">Иван Иванов</h2>
+                    <p class="text-muted">+7 999 123-45-67</p>
+                </div>
 
-        .nav-button {
-            display: block;
-            width: 220px;
-            padding: 12px;
-            margin: 10px 0;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .nav-button:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-    </style>
-</head>
-<body>
-    <div class="profile-container">
-        <img src="avatar.jpg" alt="Аватар" class="avatar">
-
-        <button class="nav-button" onclick="location.href='orders.html'">
-            История заказов
-        </button>
-
-        <button class="nav-button" onclick="location.href='payment.html'">
-            Способы оплаты
-        </button>
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('orders') }}" class="btn btn-outline-primary py-2">
+                        История заказов
+                    </a>
+                    <a href="{{ url_for('payment') }}" class="btn btn-outline-primary py-2">
+                        Способы оплаты
+                    </a>
+                    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary py-2">
+                        Выйти
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
