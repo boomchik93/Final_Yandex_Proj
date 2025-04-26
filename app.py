@@ -4,7 +4,6 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 
-# Существующие маршруты
 @app.route('/')
 def home():
     return render_template('main.html')
