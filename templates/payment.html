@@ -1,17 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}Способы оплаты{% endblock %}
+{% block title %}Оплата{% endblock %}
 
 {% block content %}
-<div class="card shadow">
-    <div class="card-body">
-        <h2 class="card-title mb-4">Способы оплаты</h2>
-        <div class="alert alert-info">
-            Доступные способы оплаты:
-            <ul class="mt-2">
-                <li>Наличные при получении</li>
-                <li>Банковская карта онлайн</li>
-            </ul>
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="card-title mb-4">💰 Способы оплаты</h2>
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Доступные методы оплаты:</h4>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Банковские карты (Visa, MasterCard, Мир)
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-phone me-2"></i>
+                        Электронные кошельки (Qiwi, YooMoney)
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-cash me-2"></i>
+                        Наличные при получении
+                    </li>
+                    <li>
+                        <i class="bi bi-globe me-2"></i>
+                        Интернет-банкинг
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>

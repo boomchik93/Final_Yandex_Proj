@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты поиска{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Результаты поиска: "{{ query }}"</h2>
+
+    {% if results %}
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-3">
+            {% for product in results %}
+                {% include 'product_card.html' %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">
+            По вашему запросу ничего не найдено
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

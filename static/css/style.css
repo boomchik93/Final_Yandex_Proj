@@ -1,5 +1,3 @@
-/* static/css/style.css */
-/* Общие стили */
 * {
     margin: 0;
     padding: 0;
@@ -13,186 +11,81 @@ body {
     background: #f8f9fa;
 }
 
-/* Шапка */
-.main-header {
-    background: #fff;
-    padding: 1rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+.navbar-brand img {
+    max-height: 40px;
+    width: auto;
 }
 
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.bi-cart3 {
+    font-size: 1.5rem;
+    color: #0d6efd;
 }
 
-.logo-link img {
-    height: 40px;
-}
-
-.search-form {
-    flex: 0 1 600px;
-    margin: 0 2rem;
-}
-
-.search-input {
-    width: 100%;
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-}
-
-/* Основной контент */
-.main-content {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-
-/* Карточки товаров */
-.product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-}
-
-.product-card {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
-}
-
-.product-card:hover {
-    transform: translateY(-3px);
+.btn-outline-primary:hover .bi-cart3 {
+    color: white;
 }
 
 .product-image {
-    width: 100%;
-    height: 200px;
+    height: 250px;
     object-fit: cover;
+    transition: transform 0.3s ease;
 }
 
-.product-info {
-    padding: 1rem;
+.card:hover .product-image {
+    transform: scale(1.03);
 }
 
-/* Формы */
-.auth-container {
-    max-width: 500px;
-    margin: 2rem auto;
-    background: #fff;
+.badge {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.dropdown-menu {
+    margin-top: 10px;
+    border: 1px solid rgba(0,0,0,.15);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.alert-danger {
+    border-radius: 0.8rem;
     padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.form-title {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: #2c3e50;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #555;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
-}
-
-.btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: #3498db;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #2980b9;
-}
-
-/* Профиль */
-.profile-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    background: #fff;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.profile-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 0 auto 1.5rem;
-    display: block;
-}
-
-/* Подвал */
-.main-footer {
-    background: #2c3e50;
-    color: white;
-    padding: 2rem;
-    margin-top: 3rem;
-}
-
-.footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    text-align: center;
-}
-
-/* Адаптивность */
 @media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        gap: 1rem;
+    .navbar-brand {
+        margin-right: 0;
     }
 
-    .search-form {
-        width: 100%;
-        margin: 0;
+    .navbar-toggler {
+        order: -1;
     }
 
-    .product-grid {
-        grid-template-columns: 1fr;
+    .card {
+        margin-bottom: 1rem;
     }
+}
 
-    .auth-container {
-        margin: 1rem;
-        padding: 1rem;
-    }
+.input-group .btn-outline-danger,
+.input-group .btn-outline-success {
+    width: 40px;
+    padding: 0.375rem 0.75rem;
+}
+
+.input-group input[readonly] {
+    background-color: #fff !important;
+    border-color: #dee2e6;
+    cursor: default;
+}
+
+.input-group input[readonly]:focus {
+    box-shadow: none;
+    border-color: #dee2e6;
 }

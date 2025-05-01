@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Ваша корзина</h2>
+    {% if cart_items %}
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>Количество</th>
+                        <th>Цена за шт.</th>
+                        <th>Сумма</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('update_cart', item_id=item.id) }}">
+                                <div class="input-group" style="max-width: 150px;">
+                                    <button class="btn btn-outline-danger" type="submit" name="action" value="decrement">
+                                        -
+                                    </button>
+                                    <input type="text" class="form-control text-center"
+                                           value="{{ item.quantity }}"
+                                           readonly
+                                           style="background-color: white;">
+                                    <button class="btn btn-outline-success" type="submit" name="action" value="increment">
+                                        +
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+                        <td>{{ item.product.price }} ₽</td>
+                        <td>{{ item.product.price * item.quantity }} ₽</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                        <td colspan="2">{{ total }} ₽</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="d-flex justify-content-end">
+                <a href="{{ url_for('checkout') }}" class="btn btn-primary">Оформить заказ</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">Ваша корзина пуста</div>
+    {% endif %}
+</div>
+{% endblock %}

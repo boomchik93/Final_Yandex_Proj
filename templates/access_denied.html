@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Доступ запрещен{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger text-center py-4">
+        <h2 class="mb-4">⛔ Доступ запрещен</h2>
+        <p class="lead fs-4">
+            У вас недостаточно прав для просмотра этой страницы
+        </p>
+        <div class="mt-4">
+            <a href="{{ url_for('home') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house-door"></i> На главную
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

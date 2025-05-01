@@ -14,7 +14,9 @@
                         <h5>Заказ #{{ order.id }}</h5>
                         <span class="text-success">{{ order.total_amount }} ₽</span>
                     </div>
-                    <small class="text-muted">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                    <small class="text-muted">
+                    {{ order.created_at.astimezone(tz).strftime('%d.%m.%Y %H:%M') }}
+                </small>
                 </div>
                 {% endfor %}
             </div>

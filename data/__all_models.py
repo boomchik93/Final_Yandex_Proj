@@ -6,12 +6,19 @@ from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
     DECIMAL,
-    Enum
+    Enum,
+    Boolean
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
+import pytz
+from datetime import datetime
 
 Base = declarative_base()
+
+
+def moscow_time():
+    return datetime.now(pytz.timezone('Europe/Moscow'))
 
 
 class Category(Base):
@@ -47,9 +54,10 @@ class User(Base):
     surname = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    address = Column(Text)
     phone = Column(String(20), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    address = Column(Text)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=moscow_time)
 
     orders = relationship("Order", back_populates="user")
     cart = relationship("Cart", back_populates="user", uselist=False)
@@ -77,7 +85,7 @@ class Order(Base):
         Enum("pending", "shipped", "delivered", "cancelled", name="order_status"),
         default="pending"
     )
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    created_at = Column(TIMESTAMP, default=moscow_time)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="orders")

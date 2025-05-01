@@ -9,12 +9,17 @@
             <div class="card-body">
                 <div class="text-center mb-4">
                     <img src="{{ url_for('static', filename='img/avatar.png') }}"
-                         class="rounded-circle mb-3"
-                         width="120"
-                         height="120"
-                         alt="Аватар">
-                    <h2 class="card-title">{{ user.name }} {{ user.surname }}</h2>
-                    <p class="text-muted">{{ user.phone }}</p>
+                        class="rounded-circle mb-3"
+                        width="120"
+                        height="120"
+                        alt="Аватар">
+                    <h2 class="card-title">
+                        {{ user.name|default('Пользователь', true) }}
+                        {{ user.surname|default('', true) }}
+                    </h2>
+                    <p class="text-muted">
+                        {{ user.phone|default('Телефон не указан', true) }}
+                    </p>
                 </div>
 
                 <div class="d-grid gap-3">
@@ -23,9 +28,6 @@
                     </a>
                     <a href="{{ url_for('payment') }}" class="btn btn-outline-primary py-2">
                         Способы оплаты
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary py-2">
-                        Выйти
                     </a>
                 </div>
             </div>
