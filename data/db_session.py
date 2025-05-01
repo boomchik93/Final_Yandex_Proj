@@ -30,9 +30,12 @@ def setup_sqlite():
 
 
 def global_init(db_file: str = 'db/shop.db'):
-    engine = create_engine(f'sqlite:///{db_file}', echo=True)
+    global SessionLocal
+    DATABASE_URL = f"sqlite:///{db_file}"
+    engine = create_engine(DATABASE_URL, echo=True)
     Base.metadata.create_all(engine)
-    return sessionmaker(bind=engine)
+    SessionLocal = sessionmaker(bind=engine)
+    return SessionLocal
 
 
 Session = global_init()

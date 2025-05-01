@@ -1,12 +1,56 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from data.db_session import get_db
-from data.__all_models import User, Product, Category, Cart, CartItem, Order, OrderItem, DeliveryAddress
+from data.__all_models import User, Product, Category, Cart, CartItem, Order, OrderItem, DeliveryAddress, PromoCode
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 import os
 import pytz
 import re
 from datetime import datetime
+from functools import wraps
+from flask import abort
+from decimal import Decimal
+
+
+def calculate_cart_total(user_id):
+    db = next(get_db())
+    try:
+        cart = db.query(Cart).options(
+            joinedload(Cart.items).joinedload(CartItem.product)
+        ).filter_by(user_id=user_id).first()
+
+        if not cart or not cart.items:
+            return 0
+
+        return sum(
+            item.product.price * item.quantity
+            for item in cart.items
+        )
+    except Exception as e:
+        app.logger.error(f"Error calculating cart total: {str(e)}")
+        return 0
+    finally:
+        db.close()
+
+
+def is_admin():
+    if 'user_id' not in session:
+        return False
+    db = next(get_db())
+    user = db.query(User).get(session['user_id'])
+    db.close()
+    return user and user.is_admin
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_admin():
+            abort(403)
+        return f(*args, **kwargs)
+
+    return decorated_function
+
 
 MOSCOW_TZ = pytz.timezone('Europe/Moscow')
 app = Flask(__name__)
@@ -64,6 +108,204 @@ def inject_user():
     return {'current_user': None}
 
 
+def validate_promo(code, user_id):
+    db = next(get_db())
+    try:
+        promo = db.query(PromoCode).filter_by(code=code.upper()).first()
+        if not promo or not promo.is_active:
+            return None, "Недействительный промокод"
+
+        if promo.end_date and promo.end_date < datetime.utcnow():
+            return None, "Промокод истек"
+
+        if promo.activations_count >= promo.max_activations:
+            return None, "Лимит активаций исчерпан"
+
+        if not promo.is_reusable:
+            existing = db.query(Order).filter(
+                Order.user_id == user_id,
+                Order.promo_code == promo.code
+            ).first()
+            if existing:
+                return None, "Вы уже использовали этот промокод"
+        cart_total = calculate_cart_total(user_id)
+        if cart_total < 1000:
+            return None, "Минимальная сумма заказа для промокода 1000 руб."
+
+        return promo, ""
+    finally:
+        db.close()
+        return promo, ""
+
+
+@app.route('/admin/promo/delete/<int:promo_id>', methods=['DELETE'])
+def admin_delete_promo(promo_id):
+    if not is_admin():
+        return jsonify({'error': 'Доступ запрещён'}), 403
+
+    db = next(get_db())
+    try:
+        promo = db.query(PromoCode).get(promo_id)
+        if not promo:
+            return jsonify({'error': 'Промокод не найден'}), 404
+
+        db.delete(promo)
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/apply_promo', methods=['POST'])
+@app.route('/api/apply_promo', methods=['POST'])
+def apply_promo():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Требуется авторизация'}), 401
+
+    db = next(get_db())
+    try:
+        data = request.get_json()
+        code = data.get('code', '').strip().upper()
+        user_id = session['user_id']
+
+        cart = db.query(Cart).options(
+            joinedload(Cart.items).joinedload(CartItem.product)
+        ).filter_by(user_id=user_id).first()
+
+        if not cart or not cart.items:
+            return jsonify({'error': 'Корзина пуста'}), 400
+
+        cart_total = sum(
+            Decimal(str(item.product.price)) * item.quantity
+            for item in cart.items
+        )
+
+        promo = db.query(PromoCode).filter_by(code=code).first()
+        if not promo or not promo.is_active:
+            return jsonify({'error': 'Недействительный промокод'}), 400
+
+        if promo.end_date and promo.end_date < datetime.utcnow():
+            return jsonify({'error': 'Промокод истек'}), 400
+
+        if promo.activations_count >= promo.max_activations:
+            return jsonify({'error': 'Лимит активаций исчерпан'}), 400
+
+        discount = Decimal(str(promo.discount)) / Decimal(100)
+        new_total = cart_total * (Decimal(1) - discount)
+
+        return jsonify({
+            'code': promo.code,
+            'discount': float(promo.discount),
+            'original_total': float(cart_total),
+            'new_total': float(new_total.quantize(Decimal('0.01'))),
+            'remaining_uses': promo.max_activations - promo.activations_count
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route('/admin/promo')
+def admin_promo_list():
+    if not is_admin():
+        flash('Доступ запрещён', 'danger')
+        return redirect(url_for('home'))
+
+    db = next(get_db())
+    try:
+        promos = db.query(PromoCode).order_by(PromoCode.id.desc()).all()
+        return render_template('admin/promo_list.html', promos=promos)
+    except Exception as e:
+        flash(f'Ошибка загрузки промокодов: {str(e)}', 'danger')
+        return redirect(url_for('home'))
+    finally:
+        db.close()
+
+
+@app.route('/admin/promo/create', methods=['GET', 'POST'])
+def admin_create_promo():
+    if not is_admin():
+        flash('Доступ запрещён', 'danger')
+        return redirect(url_for('home'))
+
+    db = next(get_db())
+
+    if request.method == 'POST':
+        try:
+            end_date = datetime.fromisoformat(request.form['end_date']) if request.form.get('end_date') else None
+            if end_date:
+                end_date = end_date.astimezone(pytz.timezone('Europe/Moscow'))
+
+            promo_data = {
+                'code': request.form['code'].strip().upper(),
+                'discount': float(request.form['discount']),
+                'max_activations': int(request.form['max_activations']),
+                'end_date': end_date,
+                'is_active': 'is_active' in request.form,
+                'is_reusable': 'is_reusable' in request.form
+            }
+
+            new_promo = PromoCode(**promo_data)
+            db.add(new_promo)
+            db.commit()
+
+            flash('Промокод успешно создан', 'success')
+            return redirect(url_for('admin_promo_list'))
+
+        except Exception as e:
+            db.rollback()
+            flash(f'Ошибка создания промокода: {str(e)}', 'danger')
+            return redirect(url_for('admin_promo_list'))
+        finally:
+            db.close()
+
+    return render_template('admin/promo_form.html')
+
+
+@app.route('/admin/promo/edit/<int:promo_id>', methods=['GET', 'POST'])
+def admin_edit_promo(promo_id):
+    if not is_admin():
+        flash('Доступ запрещён', 'danger')
+        return redirect(url_for('home'))
+
+    db = next(get_db())
+    try:
+        promo = db.query(PromoCode).get(promo_id)
+        if not promo:
+            flash('Промокод не найден', 'danger')
+            return redirect(url_for('admin_promo_list'))
+
+        if request.method == 'POST':
+            promo.code = request.form['code'].strip().upper()
+            promo.discount = float(request.form['discount'])
+            promo.max_activations = int(request.form['max_activations'])
+            promo.end_date = datetime.fromisoformat(request.form['end_date']) if request.form['end_date'] else None
+            promo.is_active = 'is_active' in request.form
+            promo.is_reusable = 'is_reusable' in request.form
+
+            db.commit()
+            flash('Промокод успешно обновлён', 'success')
+            return redirect(url_for('admin_promo_list'))
+
+        return render_template('admin/promo_form.html', promo=promo)
+
+    except ValueError as e:
+        db.rollback()
+        flash('Некорректные данные в форме', 'danger')
+        return redirect(url_for('admin_edit_promo', promo_id=promo_id))
+    except Exception as e:
+        db.rollback()
+        flash(f'Ошибка обновления промокода: {str(e)}', 'danger')
+        return redirect(url_for('admin_edit_promo', promo_id=promo_id))
+    finally:
+        db.close()
+
+
 @app.route('/')
 def home():
     db = next(get_db())
@@ -115,41 +357,95 @@ def update_cart(item_id):
 @app.route('/delivery', methods=['GET', 'POST'])
 def delivery():
     if 'user_id' not in session:
+        flash('Требуется авторизация', 'danger')
         return redirect(url_for('login'))
 
     db = next(get_db())
     try:
         user = db.query(User).get(session['user_id'])
-        if not user.phone or not re.match(r'^(\+7|8)\d{10}$', user.phone):
+
+        if not user.phone or not re.match(r'^\+7\d{10}$', user.phone):
             flash('Проверьте номер телефона в профиле', 'danger')
             return redirect(url_for('profile'))
 
-        cart = db.query(Cart).filter_by(user_id=user.id).first()
-        if not cart or not cart.items:
-            flash('Корзина пуста', 'danger')
-            return redirect(url_for('view_cart'))
+        if request.method == 'GET':
+            cart = db.query(Cart).options(
+                joinedload(Cart.items).joinedload(CartItem.product)
+            ).filter_by(user_id=user.id).first()
 
-        error_messages = []
-        for item in cart.items:
-            product = db.query(Product).get(item.product_id)
-            if not product:
-                error_messages.append("Товар недоступен")
-            elif product.stock_quantity < item.quantity:
-                error_messages.append(f"Недостаточно {product.name} (осталось {product.stock_quantity})")
+            if not cart or not cart.items:
+                flash('Корзина пуста', 'danger')
+                return redirect(url_for('view_cart'))
 
-        if error_messages:
-            for msg in error_messages:
-                flash(msg, 'danger')
-            return redirect(url_for('view_cart'))
+            total = sum(
+                Decimal(str(item.product.price)) * item.quantity
+                for item in cart.items
+            )
 
-        if request.method == 'POST':
+            return render_template('delivery.html',
+                                   cart_items=cart.items,
+                                   total=total,
+                                   user=user)
+
+        elif request.method == 'POST':
+            promo_code = request.form.get('promo_code', '').strip().upper()
+            cart = db.query(Cart).options(
+                joinedload(Cart.items).joinedload(CartItem.product)
+            ).filter_by(user_id=user.id).first()
+
+            if not cart or not cart.items:
+                flash('Корзина пуста', 'danger')
+                return redirect(url_for('view_cart'))
+
+            total = Decimal('0')
+            for item in cart.items:
+                product = db.query(Product).get(item.product_id)
+                if product.stock_quantity < item.quantity:
+                    flash(f'Недостаточно товара "{product.name}". Доступно: {product.stock_quantity}', 'danger')
+                    return redirect(url_for('view_cart'))
+                total += Decimal(str(product.price)) * item.quantity
+
+            promo = None
+            total_with_discount = total
+
+            if promo_code:
+                promo = db.query(PromoCode).filter_by(code=promo_code).first()
+
+                if promo and promo.is_active:
+                    if promo.end_date and promo.end_date < datetime.utcnow():
+                        flash('Срок действия промокода истек', 'danger')
+                    elif promo.activations_count >= promo.max_activations:
+                        flash('Лимит активаций промокода исчерпан', 'danger')
+                    else:
+                        discount = Decimal(str(promo.discount)) / Decimal(100)
+                        total_with_discount = total * (Decimal('1') - discount)
+
+                        promo.activations_count += 1
+                        if promo.activations_count >= promo.max_activations:
+                            promo.is_active = False
+                        db.commit()
+
             new_order = Order(
                 user_id=user.id,
-                total_amount=sum(item.product.price * item.quantity for item in cart.items),
-                status='Принят',
-                created_at=datetime.now(MOSCOW_TZ))
+                total_amount=total_with_discount.quantize(Decimal('0.01')),
+                status='Ожидает оплаты',
+                promo_code=promo.code if promo else None,
+                created_at=datetime.utcnow()
+            )
             db.add(new_order)
             db.flush()
+
+            for item in cart.items:
+                product = db.query(Product).get(item.product_id)
+                product.stock_quantity -= item.quantity
+
+                order_item = OrderItem(
+                    order_id=new_order.id,
+                    product_id=product.id,
+                    quantity=item.quantity,
+                    price_at_purchase=product.price
+                )
+                db.add(order_item)
 
             delivery_address = DeliveryAddress(
                 order_id=new_order.id,
@@ -159,30 +455,28 @@ def delivery():
                 house=request.form['house'],
                 apartment=request.form.get('apartment', ''),
                 phone=user.phone,
-                additional_info=request.form.get('additional_info', ''))
+                additional_info=request.form.get('additional_info', '')
+            )
             db.add(delivery_address)
-
-            for item in cart.items:
-                product = db.query(Product).get(item.product_id)
-            product.stock_quantity -= item.quantity
-            order_item = OrderItem(
-                order_id=new_order.id,
-                product_id=product.id,
-                quantity=item.quantity,
-                price_at_purchase=product.price)
-            db.add(order_item)
 
             db.query(CartItem).filter_by(cart_id=cart.id).delete()
             db.commit()
-            flash('Заказ успешно оформлен!', 'success')
+
+            flash(f'Заказ №{new_order.id} успешно оформлен!', 'success')
             return redirect(url_for('orders'))
 
-        return render_template('delivery.html')
+    except IntegrityError as e:
+        db.rollback()
+        flash('Ошибка при создании заказа', 'danger')
+        return redirect(url_for('view_cart'))
+
     except Exception as e:
-        flash(f'Ошибка: {str(e)}', 'danger')
+        db.rollback()
+        flash(f'Критическая ошибка: {str(e)}', 'danger')
+        return redirect(url_for('view_cart'))
+
     finally:
         db.close()
-    return redirect(url_for('view_cart'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -297,10 +591,22 @@ def view_cart():
         ).filter_by(user_id=session['user_id']).first()
 
         if not cart or not cart.items:
-            return render_template('cart.html', cart_items=[], total=0)
+            return render_template('cart.html', cart_items=[], total=Decimal('0'))
 
-        total = sum(item.product.price * item.quantity for item in cart.items)
-        return render_template('cart.html', cart_items=cart.items, total=total)
+        total = Decimal('0')
+        for item in cart.items:
+            price = Decimal(str(item.product.price))
+            quantity = Decimal(str(item.quantity))
+            total += price * quantity
+
+        return render_template(
+            'cart.html',
+            cart_items=cart.items,
+            total=total.quantize(Decimal('0.01')))
+
+    except Exception as e:
+        flash(f'Ошибка загрузки корзины: {str(e)}', 'danger')
+        return redirect(url_for('home'))
     finally:
         db.close()
 
@@ -424,6 +730,7 @@ def admin_panel():
         db.close()
 
 
+@app.route('/admin/add_product', methods=['POST'])
 @app.route('/admin/add_product', methods=['POST'])
 def add_product():
     if 'user_id' not in session:

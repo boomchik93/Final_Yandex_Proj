@@ -8,7 +8,6 @@
         <div class="card-body">
             <h2 class="card-title mb-4">Административная панель</h2>
 
-            <!-- Статистика -->
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card text-white bg-primary">
@@ -44,7 +43,6 @@
                 </div>
             </div>
 
-            <!-- Таблица товаров -->
             <h3 class="mb-3">Управление товарами</h3>
             <table class="table table-hover">
                 <thead>
@@ -86,7 +84,6 @@
                 </tbody>
             </table>
 
-            <!-- Форма добавления товара -->
             <h3 class="mt-5 mb-3">Добавить новый товар</h3>
             <form method="POST" action="{{ url_for('add_product') }}">
                 <div class="row g-3">
@@ -130,7 +127,6 @@
                 </div>
             </form>
 
-            <!-- Управление категориями -->
             <h3 class="mt-5 mb-3">Управление категориями</h3>
             <div class="row">
                 <div class="col-md-6">
@@ -165,6 +161,20 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="mt-5 mb-3">Управление промокодами</h3>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{{ url_for('admin_create_promo') }}" class="btn btn-success">
+                            <i class="bi bi-tag-fill"></i> Создать новый промокод
+                        </a>
+                        <a href="{{ url_for('admin_promo_list') }}" class="btn btn-primary">
+                            <i class="bi bi-card-list"></i> Просмотреть все промокоды
+                        </a>
                     </div>
                 </div>
             </div>

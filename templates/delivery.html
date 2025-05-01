@@ -1,48 +1,133 @@
 {% extends "base.html" %}
 
+{% block title %}Оформление заказа{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="container my-5">
     <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="bi bi-truck me-2"></i>Оформление заказа</h3>
+        </div>
+
         <div class="card-body">
-            <h2 class="card-title mb-4">Данные доставки</h2>
             <form method="POST">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Страна <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="country" required>
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <h4 class="mb-3">Товары в заказе</h4>
+                        <div class="list-group">
+                            {% for item in cart_items %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">{{ item.product.name }}</h5>
+                                        <small class="text-muted">{{ item.product.category.name }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div>{{ item.quantity }} × {{ item.product.price|int }} руб.</div>
+                                        <strong>{{ (item.product.price * item.quantity)|int }} руб.</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Город <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="city" required>
-                    </div>
+                    <div class="col-md-5">
+                        <h4 class="mb-3">Данные для доставки</h4>
 
-                    <div class="col-12">
-                        <label class="form-label">Улица <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="street" required>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Страна</label>
+                            <input type="text" class="form-control" name="country" required>
+                        </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Дом <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="house" required>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Город</label>
+                            <input type="text" class="form-control" name="city" required>
+                        </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Квартира</label>
-                        <input type="text" class="form-control" name="apartment">
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Улица</label>
+                            <input type="text" class="form-control" name="street" required>
+                        </div>
 
-                    <div class="col-12">
-                        <label class="form-label">Дополнительная информация</label>
-                        <textarea class="form-control" name="additional_info" rows="3"></textarea>
-                    </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Дом</label>
+                                <input type="text" class="form-control" name="house" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Квартира</label>
+                                <input type="text" class="form-control" name="apartment">
+                            </div>
+                        </div>
 
-                    <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-primary w-100">Подтвердить заказ</button>
+                        <div class="mb-4">
+                            <label class="form-label">Комментарий к заказу</label>
+                            <textarea class="form-control" name="additional_info" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-4 border-top pt-3">
+                            <label class="form-label">Промокод</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="promo_code" name="promo_code">
+                                <button type="button" class="btn btn-outline-primary" onclick="applyPromo()">
+                                    Применить
+                                </button>
+                            </div>
+                            <div id="promo_message" class="mt-2"></div>
+                        </div>
+
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h5 class="card-title">Итого к оплате</h5>
+                                <div class="fs-3 text-primary" id="total_amount">
+                                    {{ total|int }} руб.
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mt-3">
+                                    Подтвердить заказ
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+let originalTotal = {{ total }};
+
+function applyPromo() {
+    const promoCode = document.getElementById('promo_code').value;
+    fetch('/api/apply_promo', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code: promoCode})
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err });
+        return response.json();
+    })
+    .then(data => {
+        const messageEl = document.getElementById('promo_message');
+        if (data.error) {
+            messageEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+            messageEl.innerHTML = `
+                <div class="alert alert-success">
+                    Промокод "${data.code}" применен! Скидка: ${data.discount}%
+                </div>
+            `;
+            document.getElementById('total_amount').textContent =
+                (originalTotal * (1 - data.discount/100)).toFixed(2) + ' руб.';
+        }
+    })
+    .catch(error => {
+        document.getElementById('promo_message').innerHTML = `
+            <div class="alert alert-danger">${error.error || 'Ошибка сервера'}</div>
+        `;
+    });
+}
+</script>
 {% endblock %}

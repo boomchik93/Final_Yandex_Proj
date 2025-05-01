@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DECIMAL, TIMESTAMP, Boolean
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, DECIMAL, TIMESTAMP, Boolean, Float, DateTime
 from sqlalchemy.orm import relationship, declarative_base
 import pytz
 from datetime import datetime
@@ -66,6 +66,7 @@ class CartItem(Base):
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True)
+    promo_code = Column(String(50), nullable=True)
     total_amount = Column(DECIMAL(10, 2), nullable=False)
     status = Column(String(20), default="pending")
     created_at = Column(TIMESTAMP, default=moscow_time)
@@ -98,3 +99,17 @@ class DeliveryAddress(Base):
     additional_info = Column(Text)
     phone = Column(String(20), nullable=False)
     order = relationship("Order", back_populates="delivery_address")
+
+
+class PromoCode(Base):
+    __tablename__ = 'promo_codes'
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(50), unique=True, nullable=False)
+    discount = Column(Numeric(5, 2), nullable=False)
+    max_activations = Column(Integer, nullable=False, default=1)
+    activations_count = Column(Integer, default=0, nullable=False)
+    start_date = Column(DateTime, default=datetime.utcnow)
+    end_date = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    is_reusable = Column(Boolean, default=False)
