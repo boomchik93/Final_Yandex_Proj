@@ -3,35 +3,129 @@
 {% block title %}Личный кабинет{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-lg-8">
-        <div class="card shadow">
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <img src="{{ url_for('static', filename='img/avatar.png') }}"
-                        class="rounded-circle mb-3"
-                        width="120"
-                        height="120"
-                        alt="Аватар">
-                    <h2 class="card-title">
-                        {{ user.name|default('Пользователь', true) }}
-                        {{ user.surname|default('', true) }}
-                    </h2>
-                    <p class="text-muted">
-                        {{ user.phone|default('Телефон не указан', true) }}
-                    </p>
+<div class="profile-container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Личный кабинет</h3>
                 </div>
 
-                <div class="d-grid gap-3">
-                    <a href="{{ url_for('orders') }}" class="btn btn-outline-primary py-2">
-                        История заказов
-                    </a>
-                    <a href="{{ url_for('payment') }}" class="btn btn-outline-primary py-2">
-                        Способы оплаты
-                    </a>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Имя</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ user.name }}" required>
+                                <div class="invalid-feedback">
+                                    Пожалуйста, введите ваше имя
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="surname" class="form-label">Фамилия</label>
+                                <input type="text" class="form-control" id="surname" name="surname" 
+                                       value="{{ user.surname }}" required>
+                                <div class="invalid-feedback">
+                                    Пожалуйста, введите вашу фамилию
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ user.email }}" required>
+                                <div class="invalid-feedback">
+                                    Пожалуйста, введите корректный email
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="phone" class="form-label">Телефон</label>
+                                <input type="tel" class="form-control {% if phone_warning %}is-invalid{% endif %}" 
+                                       id="phone" name="phone" value="{{ user.phone }}" 
+                                       pattern="\+7\s?\d{3}\s?\d{3}-\d{2}-\d{2}" required>
+                                <div class="invalid-feedback">
+                                    Формат: +7 999 123-45-67
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="new_password" class="form-label">Новый пароль</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" 
+                                       placeholder="••••••••">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="confirm_password" class="form-label">Подтвердите пароль</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                       placeholder="••••••••">
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-save me-2"></i>Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-5">
+                        <h5 class="mb-3">Дополнительные действия:</h5>
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-box-seam me-2"></i>Мои заказы
+                            </a>
+                            {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-success">
+                                <i class="bi bi-gear me-2"></i>Админ-панель
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Маска для телефона с валидацией
+    document.getElementById('phone').addEventListener('input', function(e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+        e.target.value = '+7' + (x[2] ? ' ' + x[2] : '') + (x[3] ? ' ' + x[3] : '') +
+                        (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+    });
+
+    // Валидация формы
+    (() => {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
 {% endblock %}

@@ -21,7 +21,13 @@
                 <tbody>
                     {% for item in cart_items %}
                     <tr>
-                        <td>{{ item.product.name }}</td>
+                        <td>
+                            {% if item.product %}
+                                {{ item.product.name }}
+                            {% else %}
+                                <span class="text-danger">Товар удалён</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <form method="POST" action="{{ url_for('update_cart', item_id=item.id) }}">
                                 <div class="input-group" style="max-width: 150px;">
@@ -38,8 +44,20 @@
                                 </div>
                             </form>
                         </td>
-                        <td>{{ item.product.price }} ₽</td>
-                        <td>{{ item.product.price * item.quantity }} ₽</td>
+                        <td>
+                            {% if item.product %}
+                                {{ item.product.price }} ₽
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.product %}
+                                {{ item.product.price * item.quantity }} ₽
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>
                             <form method="POST" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
                                 <button type="submit" class="btn btn-danger btn-sm">
@@ -58,7 +76,7 @@
                 </tfoot>
             </table>
             <div class="d-flex justify-content-end">
-                <a href="{{ url_for('checkout') }}" class="btn btn-primary">Оформить заказ</a>
+                <a href="{{ url_for('delivery') }}" class="btn btn-primary">Оформить заказ</a>
             </div>
         </div>
     </div>

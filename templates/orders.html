@@ -9,14 +9,50 @@
         {% if orders %}
             <div class="list-group">
                 {% for order in orders %}
-                <div class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <h5>Заказ #{{ order.id }}</h5>
-                        <span class="text-success">{{ order.total_amount }} ₽</span>
+                <div class="list-group-item mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5>Заказ #{{ order.id }}</h5>
+                            <small class="text-muted">
+                                {{ order.created_at.astimezone(tz).strftime('%d.%m.%Y %H:%M') }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-success fs-5">{{ order.total_amount }} ₽</span>
+                            <div class="text-muted small">
+                                Статус: {{ order.status }}
+                            </div>
+                        </div>
                     </div>
-                    <small class="text-muted">
-                    {{ order.created_at.astimezone(tz).strftime('%d.%m.%Y %H:%M') }}
-                </small>
+
+                    <div class="mb-2">
+                        <strong>Товары:</strong>
+                        <ul class="list-group list-group-flush">
+                            {% for item in order.items %}
+                            <li class="list-group-item">
+                                {{ item.product.name }}
+                                <span class="text-muted">× {{ item.quantity }}</span>
+                                - {{ item.price_at_purchase * item.quantity }} ₽
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mt-2">
+                        <strong>Адрес доставки:</strong>
+                        <div class="text-muted">
+                            {{ order.delivery_address.country }},
+                            {{ order.delivery_address.city }},
+                            ул. {{ order.delivery_address.street }},
+                            д. {{ order.delivery_address.house }}
+                            {% if order.delivery_address.apartment %}
+                            , кв. {{ order.delivery_address.apartment }}
+                            {% endif %}
+                        </div>
+                        <div class="text-muted">
+                            Телефон: {{ order.delivery_address.phone }}
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Данные доставки</h2>
+            <form method="POST">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Страна <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="country" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Город <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="city" required>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Улица <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="street" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Дом <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="house" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Квартира</label>
+                        <input type="text" class="form-control" name="apartment">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Дополнительная информация</label>
+                        <textarea class="form-control" name="additional_info" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-primary w-100">Подтвердить заказ</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

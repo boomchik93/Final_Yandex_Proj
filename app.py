@@ -1,16 +1,39 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from data.db_session import get_db
-from data.__all_models import User, Product, Category, Cart, CartItem, Order, OrderItem
+from data.__all_models import User, Product, Category, Cart, CartItem, Order, OrderItem, DeliveryAddress
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 import os
 import pytz
+import re
 from datetime import datetime
 
 MOSCOW_TZ = pytz.timezone('Europe/Moscow')
 app = Flask(__name__)
 app.secret_key = 'your_very_secret_key_here'
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'img', 'products')
+
+
+def format_phone_number(phone):
+    cleaned = re.sub(r'\D', '', phone)
+
+    if cleaned.startswith('8'):
+        cleaned = '7' + cleaned[1:]
+
+    if len(cleaned) == 10:
+        cleaned = '7' + cleaned
+
+    if len(cleaned) != 11 or not cleaned.startswith('7'):
+        return None
+
+    return f'+{cleaned}'
+
+
+def regex_match(value, pattern):
+    return re.match(pattern, value) is not None
+
+
+app.jinja_env.tests['regex_match'] = regex_match
 
 
 @app.context_processor
@@ -55,27 +78,31 @@ def update_cart(item_id):
 
     db = next(get_db())
     try:
-        new_quantity = int(request.form['quantity'])
+        action = request.form.get('action')
         item = db.query(CartItem).get(item_id)
 
         if not item or item.cart.user_id != session['user_id']:
             flash('Элемент не найден', 'danger')
             return redirect(url_for('view_cart'))
 
-        if new_quantity < 0:
-            flash('Некорректное количество', 'danger')
-            return redirect(url_for('view_cart'))
+        product = db.query(Product).get(item.product_id)
 
-        if new_quantity > 0:
-            item.quantity = new_quantity
+        if action == 'increment':
+            if product.stock_quantity > item.quantity:
+                item.quantity += 1
+            else:
+                flash(f'Максимальное количество товара {product.name} - {product.stock_quantity}', 'warning')
+        elif action == 'decrement':
+            if item.quantity > 1:
+                item.quantity -= 1
+            else:
+                db.delete(item)
         else:
-            db.delete(item)
+            flash('Некорректное действие', 'danger')
 
         db.commit()
         flash('Корзина обновлена', 'success')
 
-    except ValueError:
-        flash('Введите число', 'danger')
     except Exception as e:
         db.rollback()
         flash(f'Ошибка: {str(e)}', 'danger')
@@ -85,56 +112,77 @@ def update_cart(item_id):
     return redirect(url_for('view_cart'))
 
 
-@app.route('/checkout')
-def checkout():
+@app.route('/delivery', methods=['GET', 'POST'])
+def delivery():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     db = next(get_db())
     try:
-        cart = db.query(Cart).filter_by(user_id=session['user_id']).first()
+        user = db.query(User).get(session['user_id'])
+        if not user.phone or not re.match(r'^(\+7|8)\d{10}$', user.phone):
+            flash('Проверьте номер телефона в профиле', 'danger')
+            return redirect(url_for('profile'))
+
+        cart = db.query(Cart).filter_by(user_id=user.id).first()
         if not cart or not cart.items:
+            flash('Корзина пуста', 'danger')
             return redirect(url_for('view_cart'))
+
         error_messages = []
         for item in cart.items:
             product = db.query(Product).get(item.product_id)
             if not product:
-                error_messages.append(f"Товар {item.product.name} был удален")
-                continue
-
-            if product.stock_quantity < item.quantity:
-                error_messages.append(
-                    f"Недостаточно товара {product.name}. Доступно: {product.stock_quantity}"
-                )
+                error_messages.append("Товар недоступен")
+            elif product.stock_quantity < item.quantity:
+                error_messages.append(f"Недостаточно {product.name} (осталось {product.stock_quantity})")
 
         if error_messages:
             for msg in error_messages:
                 flash(msg, 'danger')
             return redirect(url_for('view_cart'))
 
-        for item in cart.items:
-            product = db.query(Product).get(item.product_id)
+        if request.method == 'POST':
+            new_order = Order(
+                user_id=user.id,
+                total_amount=sum(item.product.price * item.quantity for item in cart.items),
+                status='Принят',
+                created_at=datetime.now(MOSCOW_TZ))
+            db.add(new_order)
+            db.flush()
+
+            delivery_address = DeliveryAddress(
+                order_id=new_order.id,
+                country=request.form['country'],
+                city=request.form['city'],
+                street=request.form['street'],
+                house=request.form['house'],
+                apartment=request.form.get('apartment', ''),
+                phone=user.phone,
+                additional_info=request.form.get('additional_info', ''))
+            db.add(delivery_address)
+
+            for item in cart.items:
+                product = db.query(Product).get(item.product_id)
             product.stock_quantity -= item.quantity
-            if product.stock_quantity < 0:
-                raise ValueError("Отрицательный остаток после списания")
+            order_item = OrderItem(
+                order_id=new_order.id,
+                product_id=product.id,
+                quantity=item.quantity,
+                price_at_purchase=product.price)
+            db.add(order_item)
 
-        new_order = Order(
-            user_id=session['user_id'],
-            total_amount=sum(item.product.price * item.quantity for item in cart.items)
-        )
-        db.query(CartItem).filter_by(cart_id=cart.id).delete()
-        db.add(new_order)
-        db.commit()
+            db.query(CartItem).filter_by(cart_id=cart.id).delete()
+            db.commit()
+            flash('Заказ успешно оформлен!', 'success')
+            return redirect(url_for('orders'))
 
-        flash('Заказ успешно оформлен!', 'success')
-        return redirect(url_for('orders'))
-
+        return render_template('delivery.html')
     except Exception as e:
-        db.rollback()
-        flash(f'Ошибка оформления: {str(e)}', 'danger')
-        return redirect(url_for('view_cart'))
+        flash(f'Ошибка: {str(e)}', 'danger')
     finally:
         db.close()
+    return redirect(url_for('view_cart'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -142,6 +190,10 @@ def register():
     if request.method == 'POST':
         db = next(get_db())
         try:
+            phone = format_phone_number(request.form['phone'])
+            if not phone:
+                flash('Неверный формат телефона', 'danger')
+                return redirect(url_for('register'))
             if request.form['password'] != request.form['confirm_password']:
                 flash('Пароли не совпадают', 'danger')
                 return redirect(url_for('register'))
@@ -151,7 +203,7 @@ def register():
                 surname=request.form['surname'],
                 email=request.form['email'],
                 password=request.form['password'],
-                phone=request.form['phone'],
+                phone=phone,
                 is_admin=False
             )
 
@@ -186,14 +238,51 @@ def login():
     return render_template('auth.html')
 
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     db = next(get_db())
     user = db.query(User).get(session['user_id'])
-    return render_template('lk.html', user=user)
+
+    if request.method == 'POST':
+        try:
+            user.name = request.form['name']
+            user.surname = request.form['surname']
+            user.email = request.form['email']
+
+            new_phone = format_phone_number(request.form['phone'])
+            if not new_phone:
+                flash('Неверный формат телефона. Используйте российский номер', 'danger')
+                return redirect(url_for('profile'))
+
+            user.phone = new_phone
+
+            if request.form['new_password']:
+                if request.form['new_password'] != request.form['confirm_password']:
+                    flash('Пароли не совпадают', 'danger')
+                    return redirect(url_for('profile'))
+                user.password = request.form['new_password']
+
+            db.commit()
+            flash('Профиль успешно обновлен', 'success')
+            return redirect(url_for('profile'))
+
+        except IntegrityError:
+            db.rollback()
+            flash('Пользователь с таким email уже существует', 'danger')
+        except Exception as e:
+            db.rollback()
+            flash(f'Ошибка обновления: {str(e)}', 'danger')
+
+    phone_warning = False
+    if user.phone:
+        phone_warning = not re.match(r'^\+7\d{10}$', user.phone)
+
+    return render_template('lk.html',
+                           user=user,
+                           phone_warning=phone_warning)
 
 
 @app.route('/cart')
@@ -203,7 +292,10 @@ def view_cart():
 
     db = next(get_db())
     try:
-        cart = db.query(Cart).filter_by(user_id=session['user_id']).first()
+        cart = db.query(Cart).options(
+            joinedload(Cart.items).joinedload(CartItem.product)
+        ).filter_by(user_id=session['user_id']).first()
+
         if not cart or not cart.items:
             return render_template('cart.html', cart_items=[], total=0)
 
@@ -288,7 +380,11 @@ def orders():
         return redirect(url_for('login'))
 
     db = next(get_db())
-    orders = db.query(Order).filter_by(user_id=session['user_id']).all()
+    orders = db.query(Order).options(
+        joinedload(Order.items).joinedload(OrderItem.product),
+        joinedload(Order.delivery_address)
+    ).filter_by(user_id=session['user_id']).all()
+
     return render_template('orders.html', orders=orders)
 
 
@@ -460,6 +556,46 @@ def logout():
     session.clear()
     flash('Вы успешно вышли из системы', 'success')
     return redirect(url_for('home'))
+
+
+@app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
+def edit_product(product_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    db = next(get_db())
+    try:
+        user = db.query(User).get(session['user_id'])
+        if not user.is_admin:
+            flash('Доступ запрещён', 'danger')
+            return redirect(url_for('home'))
+
+        product = db.query(Product).get(product_id)
+        categories = db.query(Category).all()
+
+        if request.method == 'POST':
+            product.name = request.form['name']
+            product.description = request.form['description']
+            product.price = float(request.form['price'])
+            product.stock_quantity = int(request.form['stock_quantity'])
+            product.category_id = int(request.form['category_id'])
+            product.image_url = request.form.get('image_url', product.image_url)
+
+            db.commit()
+            flash('Товар успешно обновлён', 'success')
+            return redirect(url_for('admin_panel'))
+
+        return render_template(
+            'edit_product.html',
+            product=product,
+            categories=categories
+        )
+    except Exception as e:
+        db.rollback()
+        flash(f'Ошибка: {str(e)}', 'danger')
+        return redirect(url_for('admin_panel'))
+    finally:
+        db.close()
 
 
 if __name__ == '__main__':
