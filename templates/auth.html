@@ -8,14 +8,14 @@
         <div class="card shadow">
             <div class="card-body p-4">
                 <h2 class="card-title text-center mb-4">Вход в систему</h2>
-                <form method="POST">
+                <form method="POST" action="{{ url_for('login') }}">
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Телефон</label>
-                        <input type="tel" class="form-control" id="phone" required>
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Пароль</label>
-                        <input type="password" class="form-control" id="password" required>
+                        <label class="form-label">Пароль</label>
+                        <input type="password" class="form-control" name="password" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 mb-3">Войти</button>
                     <div class="text-center">

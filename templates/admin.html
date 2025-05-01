@@ -1,200 +1,74 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            min-height: 100vh;
-        }
-        .admin-nav {
-            background: #2c3e50;
-            padding: 1rem;
-        }
-        .stat-card {
-            transition: transform 0.3s;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .product-table {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
-        }
-        .auth-form {
-            max-width: 400px;
-            margin: 5rem auto;
-            padding: 2rem;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-    </style>
-</head>
-<body>
-    <div id="authCheck"></div>
+{% extends "base.html" %}
 
-    <div id="loginForm" class="auth-form" style="display: none;">
-        <h2 class="mb-4">Авторизация администратора</h2>
-        <form onsubmit="return checkAuth(event)">
-            <div class="mb-3">
-                <label class="form-label">Логин</label>
-                <input type="text" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Пароль</label>
-                <input type="password" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Войти</button>
-        </form>
+{% block title %}Админ-панель{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h2>Управление товарами</h2>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
+            Добавить товар
+        </button>
     </div>
 
-    <div id="adminContent" style="display: none;">
-        <nav class="admin-nav d-flex justify-content-between align-items-center">
-            <h4 class="text-white mb-0">Админ-панель</h4>
-            <button class="btn btn-danger" onclick="logout()">Выйти</button>
-        </nav>
-
-        <div class="container py-4">
-            <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card card text-center p-3">
-                        <h5>Заказы за сутки</h5>
-                        <h2 id="dailyOrders">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card card text-center p-3">
-                        <h5>Новых пользователей</h5>
-                        <h2 id="newUsers">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card card text-center p-3">
-                        <h5>Общая выручка</h5>
-                        <h2 id="totalRevenue">0 ₽</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="product-table p-4">
-                <div class="d-flex justify-content-between mb-4">
-                    <h4>Управление товарами</h4>
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                        Добавить товар
-                    </button>
-                </div>
-
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>Остаток</th>
-                            <th>Цена</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsTable">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="addProductModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Добавить товар</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addProductForm">
-                        <div class="mb-3">
-                            <label class="form-label">Название товара</label>
-                            <input type="text" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Описание</label>
-                            <textarea class="form-control" rows="3" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Цена</label>
-                            <input type="number" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Количество</label>
-                            <input type="number" class="form-control" required>
-                        </div>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Цена</th>
+                <th>Остаток</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.price }} ₽</td>
+                <td>{{ product.stock }}</td>
+                <td>
+                    <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST">
+                        <button class="btn btn-danger btn-sm">Удалить</button>
                     </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="addProductModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить товар</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_product') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название товара</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Цена</label>
+                        <input type="number" class="form-control" name="price" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Количество</label>
+                        <input type="number" class="form-control" name="stock" required>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" form="addProductForm" class="btn btn-primary">Добавить</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function checkAuth(e) {
-            e.preventDefault();
-            localStorage.setItem('adminAuth', 'true');
-            window.location.reload();
-        }
-
-        function logout() {
-            localStorage.removeItem('adminAuth');
-            window.location.reload();
-        }
-
-        window.onload = function() {
-            const isAuth = localStorage.getItem('adminAuth');
-            document.getElementById('loginForm').style.display = isAuth ? 'none' : 'block';
-            document.getElementById('adminContent').style.display = isAuth ? 'block' : 'none';
-
-            if(isAuth) {
-                loadStats();
-                loadProducts();
-            }
-        }
-
-        function loadStats() {
-            document.getElementById('dailyOrders').textContent = '0';
-            document.getElementById('newUsers').textContent = '0';
-            document.getElementById('totalRevenue').textContent = '0 ₽';
-        }
-
-        function loadProducts() {
-            const products = [];
-
-            const tbody = document.getElementById('productsTable');
-            tbody.innerHTML = products.map(product => `
-                <tr>
-                    <td>${product.name}</td>
-                    <td>
-                        <input type="number" value="${product.stock}"
-                               class="form-control form-control-sm"
-                               style="width: 80px">
-                    </td>
-                    <td>
-                        <input type="number" value="${product.price}"
-                               class="form-control form-control-sm"
-                               style="width: 120px">
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-warning">Обновить</button>
-                        <button class="btn btn-sm btn-danger">Удалить</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}

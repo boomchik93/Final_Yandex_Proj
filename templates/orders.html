@@ -3,9 +3,24 @@
 {% block title %}История заказов{% endblock %}
 
 {% block content %}
-<div class="orders-history">
-    <h2>Мои заказы</h2>
-    <div class="order-list">
+<div class="card shadow">
+    <div class="card-body">
+        <h2 class="card-title mb-4">Мои заказы</h2>
+        {% if orders %}
+            <div class="list-group">
+                {% for order in orders %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <h5>Заказ #{{ order.id }}</h5>
+                        <span class="text-success">{{ order.total_amount }} ₽</span>
+                    </div>
+                    <small class="text-muted">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">У вас пока нет заказов</div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

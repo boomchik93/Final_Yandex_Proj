@@ -2,14 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .__all_models import Base
 
-SQLITE_DB_NAME = 'db/shop.db'
+DATABASE_URL = "sqlite:///db/shop.db"
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base.metadata.create_all(bind=engine)
 
 
-def global_init(db_file: str = SQLITE_DB_NAME):
-    engine = create_engine(f'sqlite:///{db_file}', echo=True)
-    Base.metadata.create_all(engine)
-    factory = sessionmaker(bind=engine)
-    return factory
-
-
-Session = global_init()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -8,27 +8,31 @@
         <div class="card shadow">
             <div class="card-body p-4">
                 <h2 class="card-title text-center mb-4">Регистрация</h2>
-                <form method="POST">
+                <form method="POST" action="{{ url_for('register') }}">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="firstName" class="form-label">Имя</label>
-                            <input type="text" class="form-control" id="firstName" required>
+                            <label class="form-label">Имя</label>
+                            <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="lastName" class="form-label">Фамилия</label>
-                            <input type="text" class="form-control" id="lastName" required>
+                            <label class="form-label">Фамилия</label>
+                            <input type="text" class="form-control" name="surname" required>
                         </div>
                         <div class="col-12">
-                            <label for="phone" class="form-label">Телефон</label>
-                            <input type="tel" class="form-control" id="phone" required>
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Телефон</label>
+                            <input type="tel" class="form-control" name="phone" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="password" class="form-label">Пароль</label>
-                            <input type="password" class="form-control" id="password" required>
+                            <label class="form-label">Пароль</label>
+                            <input type="password" class="form-control" name="password" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="confirmPassword" class="form-label">Повторите пароль</label>
-                            <input type="password" class="form-control" id="confirmPassword" required>
+                            <label class="form-label">Повторите пароль</label>
+                            <input type="password" class="form-control" name="confirm_password" required>
                         </div>
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>

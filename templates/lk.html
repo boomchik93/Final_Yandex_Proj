@@ -13,8 +13,8 @@
                          width="120"
                          height="120"
                          alt="Аватар">
-                    <h2 class="card-title">Иван Иванов</h2>
-                    <p class="text-muted">+7 999 123-45-67</p>
+                    <h2 class="card-title">{{ user.name }} {{ user.surname }}</h2>
+                    <p class="text-muted">{{ user.phone }}</p>
                 </div>
 
                 <div class="d-grid gap-3">
@@ -24,7 +24,7 @@
                     <a href="{{ url_for('payment') }}" class="btn btn-outline-primary py-2">
                         Способы оплаты
                     </a>
-                    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary py-2">
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary py-2">
                         Выйти
                     </a>
                 </div>
