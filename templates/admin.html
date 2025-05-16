@@ -89,7 +89,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Название товара</label>
-                        <input type="text" class="form-control" name="name" required>
+                        <input type="text" class="form-control" name="name" required maxlength="40">
                     </div>
 
                     <div class="col-md-6">
@@ -103,22 +103,23 @@
 
                     <div class="col-12">
                         <label class="form-label">Описание</label>
-                        <textarea class="form-control" name="description" rows="2"></textarea>
+                        <textarea class="form-control" name="description" rows="2" maxlength="60"></textarea>
                     </div>
 
                     <div class="col-md-4">
                         <label class="form-label">Цена</label>
-                        <input type="number" class="form-control" name="price" step="0.01" required>
+                        <input type="number" class="form-control" name="price" step="0.01" required min="0.01">
                     </div>
 
                     <div class="col-md-4">
                         <label class="form-label">Количество на складе</label>
-                        <input type="number" class="form-control" name="stock_quantity" required>
+                        <input type="number" class="form-control" name="stock_quantity" required min="0"
+                               oninput="this.value = Math.abs(this.value)">
                     </div>
 
                     <div class="col-md-4">
                         <label class="form-label">URL изображения</label>
-                        <input type="url" class="form-control" name="image_url">
+                        <input type="url" class="form-control" name="image_url" maxlength="40">
                     </div>
 
                     <div class="col-12">
@@ -156,7 +157,8 @@
                             <h5 class="card-title">Добавить категорию</h5>
                             <form method="POST" action="{{ url_for('add_category') }}">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="name" placeholder="Название категории" required>
+                                    <input type="text" class="form-control" name="name"
+                                           placeholder="Название категории" required maxlength="40">
                                     <button type="submit" class="btn btn-success">Добавить</button>
                                 </div>
                             </form>

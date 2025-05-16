@@ -1,39 +1,47 @@
-<div class="col">
-    <div class="card h-100 shadow">
-        {% if product.image_url %}
-            <img src="{{ url_for('static', filename='img/' + product.image_url) }}"
-                class="card-img-top product-image"
-                alt="{{ product.name }}">
-        {% else %}
-            <div class="card-img-top bg-light text-center p-5">
-                <i class="bi bi-image fs-1 text-muted"></i>
-            </div>
-        {% endif %}
+{% extends "base.html" %}
 
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">{{ product.name }}</h5>
-
-            <div class="mb-2">
-                <span class="badge bg-{{ 'success' if product.stock_quantity > 0 else 'danger' }}">
-                    {{ product.stock_quantity }} в наличии
-                </span>
-                <span class="badge bg-info ms-2">
-                    {{ product.category.name }}
-                </span>
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="row g-0">
+            <div class="col-md-4">
+                {% if product.image_url %}
+                    <img src="{{ url_for('static', filename='img/products/' + product.image_url) }}" 
+                         class="img-fluid rounded-start" 
+                         alt="{{ product.name}}"
+                         style="max-height: 400px; object-fit: contain;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" 
+                         style="height: 400px;">
+                        <i class="bi bi-image fs-1 text-muted"></i>
+                    </div>
+                {% endif %}
             </div>
 
-            <p class="card-text flex-grow-1">{{ product.description|default('Описание отсутствует', true) }}</p>
-
-            <div class="d-flex justify-content-between align-items-center">
-                <h4 class="text-success mb-0">{{ product.price|int }} ₽</h4>
-                <form method="POST" action="{{ url_for('add_to_cart', product_id=product.id) }}">
-                    <button type="submit"
-                            class="btn btn-primary"
-                            {{ 'disabled' if product.stock_quantity < 1 }}>
-                        <i class="bi bi-cart-plus"></i> В корзину
-                    </button>
-                </form>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <h1 class="card-title">{{ product.name }}</h1>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-success">{{ product.price|int }} ₽</h3>
+                        <span class="badge bg-{{ 'success' if product.stock_quantity > 0 else 'danger' }}">
+                            {{ product.stock_quantity }} в наличии
+                        </span>
+                    </div>
+                    
+                    <p class="card-text">{{ product.description }}</p>
+                    
+                    <form method="POST" action="{{ url_for('add_to_cart', product_id=product.id) }}">
+                        <div class="d-grid gap-2">
+                            <button type="submit" 
+                                    class="btn btn-primary btn-lg"
+                                    {{ 'disabled' if product.stock_quantity < 1 }}>
+                                <i class="bi bi-cart-plus"></i> Добавить в корзину
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
