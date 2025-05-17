@@ -117,7 +117,7 @@ Final_Yandex_Proj/
 ### 2. Клонирование
 
 ```commandline
-git clone https://github.com/boomchik93/Final_Yandex_Proj.git
+git clone https://github.com/boomchik93/TerraBazar.git
 cd Final_Yandex_Proj
 ```
 
